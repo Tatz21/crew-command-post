@@ -196,6 +196,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -209,11 +230,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       agent_status: "pending" | "active" | "suspended"
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"
       booking_type: "flight" | "bus" | "hotel"
+      user_role: "admin" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -344,6 +370,7 @@ export const Constants = {
       agent_status: ["pending", "active", "suspended"],
       booking_status: ["pending", "confirmed", "cancelled", "completed"],
       booking_type: ["flight", "bus", "hotel"],
+      user_role: ["admin", "agent"],
     },
   },
 } as const
