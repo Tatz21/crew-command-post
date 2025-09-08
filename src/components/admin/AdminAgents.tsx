@@ -92,7 +92,7 @@ export const AdminAgents = () => {
           .insert({
             ...formData,
             agent_code: codeData,
-            user_id: '00000000-0000-0000-0000-000000000000', // Placeholder user_id for admin-created agents
+            user_id: null, // Admin-created agents don't need a user_id initially
           });
 
         if (error) throw error;
