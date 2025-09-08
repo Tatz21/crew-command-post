@@ -68,21 +68,31 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="text-center">
-          <Button 
-            onClick={() => navigate('/admin')}
-            size="lg"
-            className="mr-4"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Access Admin Dashboard
-          </Button>
-          <Button 
-            variant="outline"
-            size="lg"
-          >
-            View Documentation
-          </Button>
+        <div className="text-center space-y-4">
+          <div>
+            <Button 
+              onClick={() => navigate('/admin')}
+              size="lg"
+              className="mr-4"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Access Admin Dashboard
+            </Button>
+            <Button 
+              onClick={() => navigate('/agent')}
+              size="lg"
+              className="mr-4"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Agent Portal
+            </Button>
+            <Button 
+              variant="outline"
+              size="lg"
+            >
+              View Documentation
+            </Button>
+          </div>
         </div>
       </div>
     </div>
