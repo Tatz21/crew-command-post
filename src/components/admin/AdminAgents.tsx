@@ -313,6 +313,7 @@ export const AdminAgents = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(agent)}
+                      className="h-8 w-8 p-0"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -320,6 +321,7 @@ export const AdminAgents = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(agent.id)}
+                      className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
