@@ -13,7 +13,8 @@ import { AdminAuth } from '@/components/admin/AdminAuth';
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'agent' | null>(null);
+  const [agentData, setAgentData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -24,13 +25,14 @@ const AdminDashboard = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check admin status when session changes
+        // Check user role when session changes
         if (session?.user) {
           setTimeout(() => {
-            checkAdminStatus(session.user.id);
+            checkUserAccess(session.user.id);
           }, 0);
         } else {
-          setIsAdmin(false);
+          setUserRole(null);
+          setAgentData(null);
           setLoading(false);
         }
       }
@@ -42,7 +44,7 @@ const AdminDashboard = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminStatus(session.user.id);
+        checkUserAccess(session.user.id);
       } else {
         setLoading(false);
       }
@@ -51,24 +53,45 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminStatus = async (userId: string) => {
+  const checkUserAccess = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // First check if user is admin
+      const { data: adminData, error: adminError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
 
-      if (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
+      if (adminError) {
+        console.error('Error checking admin status:', adminError);
+      }
+
+      if (adminData) {
+        setUserRole('admin');
+        setLoading(false);
+        return;
+      }
+
+      // If not admin, check if user is agent
+      const { data: agentData, error: agentError } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (agentError) {
+        console.error('Error checking agent status:', agentError);
+        setUserRole(null);
+      } else if (agentData) {
+        setUserRole('agent');
+        setAgentData(agentData);
       } else {
-        setIsAdmin(!!data);
+        setUserRole(null);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
-      setIsAdmin(false);
+      console.error('Error checking user access:', error);
+      setUserRole(null);
     } finally {
       setLoading(false);
     }
@@ -95,7 +118,7 @@ const AdminDashboard = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading admin dashboard...</p>
+          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -105,14 +128,14 @@ const AdminDashboard = () => {
     return <AdminAuth />;
   }
 
-  if (!isAdmin) {
+  if (!userRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-destructive">Access Denied</CardTitle>
             <CardDescription>
-              You don't have admin privileges. Please contact your administrator.
+              You don't have access to this dashboard. Please contact your administrator.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -129,7 +152,16 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              {userRole === 'admin' ? 'Admin Dashboard' : 'Agent Dashboard'}
+            </h1>
+            {userRole === 'agent' && agentData && (
+              <p className="text-sm text-muted-foreground">
+                {agentData.company_name} ({agentData.agent_code})
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
               Welcome, {user.email}
@@ -142,16 +174,18 @@ const AdminDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="agents" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="agents">Agents</TabsTrigger>
+        <Tabs defaultValue={userRole === 'admin' ? 'agents' : 'bookings'} className="space-y-6">
+          <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            {userRole === 'admin' && <TabsTrigger value="agents">Agents</TabsTrigger>}
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="agents">
-            <AdminAgents />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <TabsContent value="agents">
+              <AdminAgents />
+            </TabsContent>
+          )}
           
           <TabsContent value="bookings">
             <AdminBookings />

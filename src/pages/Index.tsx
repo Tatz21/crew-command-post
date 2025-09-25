@@ -76,15 +76,7 @@ const Index = () => {
               className="mr-4"
             >
               <Settings className="h-4 w-4 mr-2" />
-              Access Admin Dashboard
-            </Button>
-            <Button 
-              onClick={() => navigate('/agent')}
-              size="lg"
-              className="mr-4"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Agent Portal
+              Access Dashboard
             </Button>
             <Button 
               variant="outline"
