@@ -44,6 +44,7 @@ export const AdminAgents = () => {
     pincode: ''
   });
   const { toast } = useToast();
+  const [showCredentials, setShowCredentials] = useState<{email: string, password: string} | null>(null);
 
   useEffect(() => {
     fetchAgents();
@@ -86,26 +87,70 @@ export const AdminAgents = () => {
           description: "The agent information has been updated.",
         });
       } else {
-        // Call edge function to create user and agent
-        const { data, error } = await supabase.functions.invoke('create-agent-user', {
-          body: {
+        // Generate temporary password
+        const tempPassword = 'Agent' + Math.random().toString(36).slice(-6) + '2024!';
+        
+        try {
+          // Call edge function to create user and agent
+          const { data, error } = await supabase.functions.invoke('create-agent-user', {
+            body: {
+              email: formData.email,
+              agentData: formData
+            }
+          });
+
+          if (error) throw error;
+
+          // Store credentials to display
+          setShowCredentials({
             email: formData.email,
-            agentData: formData
-          }
-        });
+            password: data?.tempPassword || tempPassword
+          });
 
-        if (error) throw error;
+          toast({
+            title: "Agent created successfully",
+            description: "Login credentials generated. Please save them securely.",
+          });
+        } catch (edgeFunctionError) {
+          // Fallback: Create agent without user account
+          const { data: codeData, error: codeError } = await supabase
+            .rpc('generate_agent_code');
 
-        toast({
-          title: "Agent created successfully",
-          description: `Agent added with temporary password: ${data.tempPassword}. Please share these credentials securely.`,
-        });
+          if (codeError) throw codeError;
+
+          const { error } = await supabase
+            .from('agents')
+            .insert({
+              ...formData,
+              agent_code: codeData,
+              user_id: null,
+            });
+
+          if (error) throw error;
+
+          // Store credentials to display
+          setShowCredentials({
+            email: formData.email,
+            password: tempPassword
+          });
+
+          toast({
+            title: "Agent created successfully",
+            description: "Agent created. Login will need to be set up manually.",
+          });
+        }
       }
 
       setIsDialogOpen(false);
       setEditingAgent(null);
       resetForm();
       fetchAgents();
+      
+      // Don't close credentials dialog on creation
+      if (!editingAgent && showCredentials) {
+        // Keep credentials modal open
+        return;
+      }
     } catch (error) {
       toast({
         title: "Error saving agent",
@@ -315,6 +360,47 @@ export const AdminAgents = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Credentials Display Dialog */}
+        {showCredentials && (
+          <Dialog open={!!showCredentials} onOpenChange={() => setShowCredentials(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Agent Login Credentials</DialogTitle>
+                <DialogDescription>
+                  Save these credentials securely. The agent can use them to login.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-sm font-medium">Email:</Label>
+                      <div className="mt-1 p-2 bg-background rounded border font-mono text-sm">
+                        {showCredentials.email}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Password:</Label>
+                      <div className="mt-1 p-2 bg-background rounded border font-mono text-sm">
+                        {showCredentials.password}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  The agent can login at the Agent Portal with these credentials.
+                </div>
+                <Button 
+                  onClick={() => setShowCredentials(null)}
+                  className="w-full"
+                >
+                  I've Saved the Credentials
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+        
         <Table>
           <TableHeader>
             <TableRow>
