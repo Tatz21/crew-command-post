@@ -19,6 +19,11 @@ type Agent = {
   status: string;
   commission_rate: number;
   created_at: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  pincode: string | null;
 };
 
 export const AdminAgents = () => {
@@ -81,25 +86,19 @@ export const AdminAgents = () => {
           description: "The agent information has been updated.",
         });
       } else {
-        // Generate agent code
-        const { data: codeData, error: codeError } = await supabase
-          .rpc('generate_agent_code');
-
-        if (codeError) throw codeError;
-
-        const { error } = await supabase
-          .from('agents')
-          .insert({
-            ...formData,
-            agent_code: codeData,
-            user_id: null, // Admin-created agents don't need a user_id initially
-          });
+        // Call edge function to create user and agent
+        const { data, error } = await supabase.functions.invoke('create-agent-user', {
+          body: {
+            email: formData.email,
+            agentData: formData
+          }
+        });
 
         if (error) throw error;
 
         toast({
           title: "Agent created successfully",
-          description: "New agent has been added to the system.",
+          description: `Agent added with temporary password: ${data.tempPassword}. Please share these credentials securely.`,
         });
       }
 
@@ -124,11 +123,11 @@ export const AdminAgents = () => {
       email: agent.email,
       phone: agent.phone,
       commission_rate: agent.commission_rate,
-      address: '',
-      city: '',
-      state: '',
-      country: '',
-      pincode: ''
+      address: agent.address || '',
+      city: agent.city || '',
+      state: agent.state || '',
+      country: agent.country || '',
+      pincode: agent.pincode || ''
     });
     setIsDialogOpen(true);
   };
@@ -259,6 +258,46 @@ export const AdminAgents = () => {
                       value={formData.commission_rate}
                       onChange={(e) => setFormData({ ...formData, commission_rate: parseFloat(e.target.value) })}
                       required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pincode">Pincode</Label>
+                    <Input
+                      id="pincode"
+                      value={formData.pincode}
+                      onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
                     />
                   </div>
                 </div>
