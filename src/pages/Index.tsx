@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, CreditCard, Settings } from 'lucide-react';
+import logo from '@/assets/logo.gif';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -10,7 +11,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4 text-foreground">Travelopedia</h1>
+          <div className="flex justify-center mb-4">
+            <img src={logo} alt="Travelopedia" className="h-20" />
+          </div>
           <p className="text-xl text-muted-foreground">Travel Booking Management System</p>
         </div>
 
