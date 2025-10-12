@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import logo from '@/assets/logo.gif';
 
 export const AdminAuth = () => {
   const [email, setEmail] = useState('');
@@ -87,8 +88,10 @@ export const AdminAuth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Admin Access</CardTitle>
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-2">
+            <img src={logo} alt="Admin Access" className="h-16" />
+          </div>
           <CardDescription>
             Sign in to access the admin dashboard
           </CardDescription>
