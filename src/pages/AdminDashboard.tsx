@@ -9,6 +9,7 @@ import { AdminAgents } from '@/components/admin/AdminAgents';
 import { AdminBookings } from '@/components/admin/AdminBookings';
 import { AdminPayments } from '@/components/admin/AdminPayments';
 import { AdminAuth } from '@/components/admin/AdminAuth';
+import logo from '@/assets/logo.gif';
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -129,7 +130,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <img src={logo} alt="Admin Dashboard" className="h-12" />
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
               Welcome, {user.email}
