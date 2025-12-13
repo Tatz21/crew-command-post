@@ -518,7 +518,7 @@ export const AdminAgents = () => {
         )}
         {/* View Agent Details Dialog */}
         {viewingAgent && (
-          <Dialog open={!!viewingAgent} onOpenChange={() => setViewingAgent(null)}>
+          <Dialog open={!!viewingAgent} onOpenChange={(open) => {if (!open) setViewingAgent(null)}}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Agent Details</DialogTitle>
