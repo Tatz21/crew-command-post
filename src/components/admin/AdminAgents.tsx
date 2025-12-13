@@ -268,9 +268,11 @@ export const AdminAgents = () => {
       });
 
       fetchAgents();            // refresh table
-      setViewingAgent((prev) =>
+      setViewingAgent(null);
+      /* setViewingAgent((prev) =>
         prev ? { ...prev, status: newStatus } : prev
       );
+      */
 
     } catch (error) {
       toast({
