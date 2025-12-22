@@ -253,7 +253,7 @@ export const AdminAgents = () => {
       });
     }
   };
-  const updateAgentStatus = async (id: string, newStatus: string) => {
+/*   const updateAgentStatus = async (id: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from("agents")
@@ -267,18 +267,34 @@ export const AdminAgents = () => {
         description: `Agent status changed to ${newStatus}`,
       });
 
-      fetchAgents();            // refresh table
-      setViewingAgent(null);
-      /* setViewingAgent((prev) =>
-        prev ? { ...prev, status: newStatus } : prev
-      );
-      */
-
+      fetchAgents(); // refresh table
+      setViewingAgent(null); // close details dialog
     } catch (error) {
       toast({
         title: "Error updating status",
         description: "Could not update agent status.",
         variant: "destructive",
+      });
+    }
+  }; */
+
+  const updateAgentStatus = async (id: string) => {
+    const { error } = await supabase.functions.invoke("create-agent-status-email",
+      {
+        body: { agent_id: id }
+      }
+    );
+
+    if (error) {
+      toast({
+        title: "Approval Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Approved",
+        description: "Agent approved & login email sent",
       });
     }
   };
