@@ -337,8 +337,22 @@ export const AdminAgents = () => {
       setViewingAgent(prev =>
         prev ? { ...prev, status: newStatus } : prev
       );
+      // 1 Update DB FIRST
+      const { error: updateError } = await supabase
+        .from("agents")
+        .update({ status: newStatus })
+        .eq("id", id);
+
+      if (updateError) throw updateError;
+
+      // 2 If activating, call edge function to send email
       if (newStatus === "active") {
         const { data: sessionData } = await supabase.auth.getSession();
+
+        if (!sessionData.session) {
+          throw new Error("Admin not authenticated");
+        }
+        
         const { data, error } = await supabase.functions.invoke("create-agent-status-email", {
           body: { agent_id: id },
           headers: {
@@ -346,30 +360,20 @@ export const AdminAgents = () => {
           },
         });
 
-        if (error) throw error;
+        if (error || data?.success === false) {
+          // rollback if email/auth failed
+          await supabase
+            .from("agents")
+            .update({ status: "pending" })
+            .eq("id", id);
 
-        if (data && !data.success) {  
-          toast({
-            title: "Approval Failed",
-            description: data.message || "Could not approve agent.",
-            variant: "destructive",
-          });
-          return;
-        } else {
-          toast({
-            title: "Agent Approved",
-            description: "Agent approved & Login credentials sent to agent email",
-          });
+          throw new Error(data?.message || "Approval email failed");
         }
+        toast({
+          title: "Agent Approved",
+          description: "Login credentials sent to agent email",
+        });
       } else {
-        // Just update status (no email)
-        const { error } = await supabase
-          .from("agents")
-          .update({ status: newStatus })
-          .eq("id", id);
-
-        if (error) throw error;
-
         toast({
           title: "Status Updated",
           description: `Agent status changed to ${newStatus}`,
