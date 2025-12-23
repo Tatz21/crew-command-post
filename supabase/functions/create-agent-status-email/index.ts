@@ -87,19 +87,6 @@ serve(async (req) => {
       .eq("id", agent.id);
 
     /* 5. Send Email via MSG91 */
-    const emailPayload = {
-      template_id: 11122025_3,
-      recipients: [
-        {
-          to: agent.email,
-          variables: {
-            contact_person: agent.contact_person,
-            agent_code: agentCode,
-            password: tempPassword,
-          },
-        },
-      ],
-    };
     
     const emailRes = await fetch("https://control.msg91.com/api/v5/email/send", {
       method: "POST",
@@ -107,7 +94,28 @@ serve(async (req) => {
         "Content-Type": "application/json",
         authkey: MSG91_AUTH_KEY,
       },
-      body: JSON.stringify(emailPayload),
+      body: JSON.stringify({
+        recipients: [
+          {
+            to: [
+              {
+                name: agent.contact_person,
+                email: agent.email
+              },
+            ],
+            variables: {
+                contact_person: agent.contact_person,
+                agent_code: agentCode,
+                password: tempPassword,
+              },
+          },
+        ],
+        from: {
+          email: "no-reply@phoenixtravelopedia.com"
+        },
+        domain: "phoenixtravelopedia.com",
+        template_id: "11122025_3"
+      }),
     });
 
     if (!emailRes.ok) {
