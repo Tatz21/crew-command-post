@@ -11,7 +11,7 @@ import { Pencil, Trash2, Plus, Eye } from 'lucide-react';
 
 type Agent = {
   id: string;
-  agent_code: string;
+  agent_code: string | null;
   company_name: string;
   contact_person: string;
   email: string;
@@ -23,14 +23,16 @@ type Agent = {
   pincode: string | null;
   trade_licence_file: string | null;
   trade_licence: string | null;
-  pan: string;
-  pan_file: any;
-  aadhaar_file: any;
-  aadhaar: string;
+  pan: string | null;
+  pan_file: string | null;
+  aadhaar_file: string | null;
+  aadhaar: number | null;
   password: string | null;
-  status: string;
-  commission_rate: number;
+  status: "pending" | "active" | "suspended" | null;
+  commission_rate: number | null;
   created_at: string;
+  updated_at: string;
+  user_id: string | null;
 };
 
 export const AdminAgents = () => {
@@ -54,7 +56,7 @@ export const AdminAgents = () => {
     trade_licence_file: '',
     pan: '',
     pan_file: '',
-    aadhaar: '',
+    aadhaar: '' as string | number,
     aadhaar_file: ''
   });
   const { toast } = useToast();
@@ -79,10 +81,10 @@ export const AdminAgents = () => {
 
   const handleAadhaarBlur = () => {
     if (!formData.aadhaar) return;
-    if (!validateAadhaar(formData.aadhaar)) {
+    if (!validateAadhaar(String(formData.aadhaar))) {
       toast({ title: "Invalid Aadhaar", description: "Aadhaar must be exactly 12 digits", variant: "destructive" });
     }
-  };  
+  };
   
   const uploadDocument = async (file: File, fieldName: string) => {
     const form = new FormData();
@@ -168,14 +170,19 @@ export const AdminAgents = () => {
           return;
         }
 
-        if (!validateAadhaar(formData.aadhaar)) {
+        if (!validateAadhaar(String(formData.aadhaar))) {
           toast({ title: "Invalid Aadhaar", description: "Aadhaar must be exactly 12 digits", variant: "destructive" });
           return;
         }
 
+        const updateData = {
+          ...formData,
+          aadhaar: formData.aadhaar ? Number(formData.aadhaar) : null
+        };
+
         const { error } = await supabase
           .from('agents')
-          .update(formData)
+          .update(updateData)
           .eq('id', editingAgent.id);
 
         if (error) throw error;
@@ -216,13 +223,16 @@ export const AdminAgents = () => {
 
           if (codeError) throw codeError;
 
+          const insertData = {
+            ...formData,
+            aadhaar: formData.aadhaar ? Number(formData.aadhaar) : null,
+            agent_code: codeData,
+            user_id: null,
+          };
+
           const { error } = await supabase
             .from('agents')
-            .insert({
-              ...formData,
-              agent_code: codeData,
-              user_id: null,
-            });
+            .insert(insertData);
 
           if (error) throw error;
 
@@ -276,7 +286,7 @@ export const AdminAgents = () => {
       trade_licence_file: agent.trade_licence_file || '',
       pan: agent.pan || '',
       pan_file: agent.pan_file || '',
-      aadhaar: agent.aadhaar || '',
+      aadhaar: agent.aadhaar ?? '',
       aadhaar_file: agent.aadhaar_file || ''
     });
     setIsDialogOpen(true);
@@ -332,7 +342,7 @@ export const AdminAgents = () => {
     }
   }; */
 
-  const updateAgentStatus = async (id: string, newStatus: string) => {
+  const updateAgentStatus = async (id: string, newStatus: "pending" | "active" | "suspended") => {
     try {
       setViewingAgent(prev =>
         prev ? { ...prev, status: newStatus } : prev
@@ -722,9 +732,12 @@ export const AdminAgents = () => {
                   <Label className="font-semibold">Status</Label>
                   <select
                     className="w-full border rounded p-2"
-                    value={viewingAgent.status}
+                    value={viewingAgent.status ?? ''}
                     disabled={viewingAgent.status === "active"}
-                    onChange={(e) => updateAgentStatus(viewingAgent.id, e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value as "active" | "pending" | "suspended";
+                      if (value) updateAgentStatus(viewingAgent.id, value);
+                    }}
                   >
                     <option value="">Select Status</option>
                     <option value="active">Approve (Active)</option>
