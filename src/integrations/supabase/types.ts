@@ -16,8 +16,10 @@ export type Database = {
     Tables: {
       agents: {
         Row: {
+          aadhaar: number | null
+          aadhaar_file: string | null
           address: string | null
-          agent_code: string
+          agent_code: string | null
           city: string | null
           commission_rate: number | null
           company_name: string
@@ -26,16 +28,23 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          pan: string | null
+          pan_file: string | null
+          password: string | null
           phone: string
           pincode: string | null
           state: string | null
           status: Database["public"]["Enums"]["agent_status"] | null
+          trade_licence: string | null
+          trade_licence_file: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          aadhaar?: number | null
+          aadhaar_file?: string | null
           address?: string | null
-          agent_code: string
+          agent_code?: string | null
           city?: string | null
           commission_rate?: number | null
           company_name: string
@@ -44,16 +53,23 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          pan?: string | null
+          pan_file?: string | null
+          password?: string | null
           phone: string
           pincode?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["agent_status"] | null
+          trade_licence?: string | null
+          trade_licence_file?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          aadhaar?: number | null
+          aadhaar_file?: string | null
           address?: string | null
-          agent_code?: string
+          agent_code?: string | null
           city?: string | null
           commission_rate?: number | null
           company_name?: string
@@ -62,10 +78,15 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          pan?: string | null
+          pan_file?: string | null
+          password?: string | null
           phone?: string
           pincode?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["agent_status"] | null
+          trade_licence?: string | null
+          trade_licence_file?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -145,6 +166,63 @@ export type Database = {
           },
         ]
       }
+      daily_login_otp: {
+        Row: {
+          agent_code: string
+          expires_at: string | null
+          id: string
+          login_date: string | null
+          otp: string
+          verified: boolean | null
+        }
+        Insert: {
+          agent_code: string
+          expires_at?: string | null
+          id?: string
+          login_date?: string | null
+          otp: string
+          verified?: boolean | null
+        }
+        Update: {
+          agent_code?: string
+          expires_at?: string | null
+          id?: string
+          login_date?: string | null
+          otp?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      otp_verifications: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          identifier: string
+          otp_code: string
+          type: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          identifier: string
+          otp_code: string
+          type: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          identifier?: string
+          otp_code?: string
+          type?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           agent_id: string
@@ -217,23 +295,82 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_balances: {
+        Row: {
+          agent_id: string
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          agent_id: string
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          razorpay_payment_id: string | null
+          reference_id: string | null
+          status: string
+          transaction_type: string
+        }
+        Insert: {
+          agent_id: string
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          razorpay_payment_id?: string | null
+          reference_id?: string | null
+          status?: string
+          transaction_type: string
+        }
+        Update: {
+          agent_id?: string
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          razorpay_payment_id?: string | null
+          reference_id?: string | null
+          status?: string
+          transaction_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      generate_agent_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
+      generate_agent_code: { Args: never; Returns: string }
+      generate_booking_reference: { Args: never; Returns: string }
+      get_agent_for_auth: {
+        Args: { agent_email: string }
+        Returns: {
+          email: string
+          phone: string
+          user_id: string
+        }[]
       }
-      generate_booking_reference: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      is_admin: {
-        Args: { user_uuid?: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { user_uuid?: string }; Returns: boolean }
     }
     Enums: {
       agent_status: "pending" | "active" | "suspended"
