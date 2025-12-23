@@ -12,10 +12,29 @@ serve(async (req) => {
   }
   
   try {
-    const { agent_id } = await req.json();
+    // AUTH CHECK
+    const authHeader = req.headers.get("authorization");
 
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Missing Authorization" }),
+        { status: 401 }
+      );
+    }
+    
+    // Parse body
+    const { agent_id } = await req.json();
+    if (!agent_id) {
+      return new Response(
+        JSON.stringify({ success: false, message: "agent_id required" }),
+        { status: 400 }
+      );
+    }
+    // Admin client (SERVICE ROLE)
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
     const MSG91_AUTH_KEY = Deno.env.get('MSG91_AUTH_KEY');
 
     if (!MSG91_AUTH_KEY) {
@@ -25,8 +44,6 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     /* 1 Fetch agent */
     const { data: agent, error: fetchError } = await supabase
@@ -50,7 +67,7 @@ serve(async (req) => {
     const tempPassword = Math.random().toString(36).slice(-8) + 'A1!'
 
     /* 3 Create auth user */
-    const { data: authData, error: authError } =
+    const { data: userData, error: authError } =
       await supabase.auth.admin.createUser({
         email: agent.email,
         password: tempPassword,
@@ -63,10 +80,9 @@ serve(async (req) => {
     await supabase
       .from("agents")
       .update({
-        status: "active",
         agent_code: agentCode,
         password: tempPassword,
-        user_id: authData.user.id,
+        user_id: userData.user.id,
       })
       .eq("id", agent.id);
 
