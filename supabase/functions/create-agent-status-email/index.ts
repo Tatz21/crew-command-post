@@ -7,6 +7,10 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+  
   try {
     const { agent_id } = await req.json();
 
@@ -108,3 +112,4 @@ serve(async (req) => {
     );
   }
 });
+
