@@ -40,8 +40,10 @@ serve(async (req) => {
     }
     
     /* 2. Generate credentials */
+    // Generate Agent Code
     const agentCode = `AGT-${Math.floor(100000 + Math.random() * 900000)}`;
-    const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
+    // Generate Temporary password
+    const tempPassword = Math.random().toString(36).slice(-8) + 'A1!'
 
     /* 3 Create auth user */
     const { data: authData, error: authError } =
