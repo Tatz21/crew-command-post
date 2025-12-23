@@ -333,43 +333,58 @@ export const AdminAgents = () => {
   }; */
 
   const updateAgentStatus = async (id: string, newStatus: string) => {
-    if (newStatus === "active") {
-      const { data, error } = await supabase.functions.invoke("create-agent-status-email", {
-        body: { agent_id: id }
-      });
-
-      if (error) throw error;
-
-      if (data && !data.success) {  
-        toast({
-          title: "Approval Failed",
-          description: data.message || "Could not approve agent.",
-          variant: "destructive",
+    try {
+      setViewingAgent(prev =>
+        prev ? { ...prev, status: newStatus } : prev
+      );
+      if (newStatus === "active") {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const { data, error } = await supabase.functions.invoke("create-agent-status-email", {
+          body: { agent_id: id },
+          headers: {
+            Authorization: `Bearer ${sessionData.session?.access_token}`,
+          },
         });
-        return;
+
+        if (error) throw error;
+
+        if (data && !data.success) {  
+          toast({
+            title: "Approval Failed",
+            description: data.message || "Could not approve agent.",
+            variant: "destructive",
+          });
+          return;
+        } else {
+          toast({
+            title: "Agent Approved",
+            description: "Agent approved & Login credentials sent to agent email",
+          });
+        }
       } else {
+        // Just update status (no email)
+        const { error } = await supabase
+          .from("agents")
+          .update({ status: newStatus })
+          .eq("id", id);
+
+        if (error) throw error;
+
         toast({
-          title: "Agent Approved",
-          description: "Agent approved & Login credentials sent to agent email",
+          title: "Status Updated",
+          description: `Agent status changed to ${newStatus}`,
         });
       }
-    } else {
-      // Just update status (no email)
-      const { error } = await supabase
-        .from("agents")
-        .update({ status: newStatus })
-        .eq("id", id);
 
-      if (error) throw error;
-
+      fetchAgents(); // refresh table
+      setViewingAgent(null); // close details dialog
+    } catch (error) {
       toast({
-        title: "Status Updated",
-        description: `Agent status changed to ${newStatus}`,
+        title: "Error updating status",
+        description: error.message || "Could not update agent status.",
+        variant: "destructive",
       });
     }
-
-    fetchAgents(); // refresh table
-    setViewingAgent(null); // close details dialog
   };
 
 
@@ -704,6 +719,7 @@ export const AdminAgents = () => {
                   <select
                     className="w-full border rounded p-2"
                     value={viewingAgent.status}
+                    disabled={viewingAgent.status === "active"}
                     onChange={(e) => updateAgentStatus(viewingAgent.id, e.target.value)}
                   >
                     <option value="">Select Status</option>
