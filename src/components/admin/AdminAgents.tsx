@@ -21,12 +21,13 @@ type Agent = {
   state: string | null;
   country: string | null;
   pincode: string | null;
-  trade_licence_file: string;
-  trade_licence: string;
+  trade_licence_file: string | null;
+  trade_licence: string | null;
   pan: string;
   pan_file: any;
   aadhaar_file: any;
   aadhaar: string;
+  password: string | null;
   status: string;
   commission_rate: number;
   created_at: string;
@@ -81,6 +82,58 @@ export const AdminAgents = () => {
     if (!validateAadhaar(formData.aadhaar)) {
       toast({ title: "Invalid Aadhaar", description: "Aadhaar must be exactly 12 digits", variant: "destructive" });
     }
+  };  
+  
+  const uploadDocument = async (file: File, fieldName: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("field", fieldName);
+
+    const { data, error } = await supabase.functions.invoke('upload-agent-documents', {
+      method: "POST",
+      body: form,
+      headers: { 
+        Authorization:`Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+      },
+    });
+
+    if (error || !data?.url) {
+      console.error(error);
+      toast({
+        title: "File Upload failed",
+        description: error?.message || "Could not upload file",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    return data.url;
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files } = e.target;
+
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+
+    // 2 MB limit (2 * 1024 * 1024)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "File size must be less than 2 MB",
+        variant: "destructive",
+      });
+      e.target.value = ""; // reset input
+      return;
+    }
+
+    const url = await uploadDocument(file, name);
+    if (url) {
+      toast({ title: "Uploaded", description: `${name} uploaded successfully.` });
+      setFormData({ ...formData, [name]: url }); // SAVE URL ONLY
+    }
+
   };
 
   const fetchAgents = async () => {
@@ -253,6 +306,7 @@ export const AdminAgents = () => {
       });
     }
   };
+
 /*   const updateAgentStatus = async (id: string, newStatus: string) => {
     try {
       const { error } = await supabase
@@ -278,26 +332,46 @@ export const AdminAgents = () => {
     }
   }; */
 
-  const updateAgentStatus = async (id: string) => {
-    const { error } = await supabase.functions.invoke("create-agent-status-email",
-      {
+  const updateAgentStatus = async (id: string, newStatus: string) => {
+    if (newStatus === "active") {
+      const { data, error } = await supabase.functions.invoke("create-agent-status-email", {
         body: { agent_id: id }
-      }
-    );
-
-    if (error) {
-      toast({
-        title: "Approval Failed",
-        description: error.message,
-        variant: "destructive",
       });
+
+      if (error) throw error;
+
+      if (data && !data.success) {  
+        toast({
+          title: "Approval Failed",
+          description: data.message || "Could not approve agent.",
+          variant: "destructive",
+        });
+        return;
+      } else {
+        toast({
+          title: "Agent Approved",
+          description: "Agent approved & Login credentials sent to agent email",
+        });
+      }
     } else {
+      // Just update status (no email)
+      const { error } = await supabase
+        .from("agents")
+        .update({ status: newStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
       toast({
-        title: "Approved",
-        description: "Agent approved & login email sent",
+        title: "Status Updated",
+        description: `Agent status changed to ${newStatus}`,
       });
     }
+
+    fetchAgents(); // refresh table
+    setViewingAgent(null); // close details dialog
   };
+
 
   const resetForm = () => {
     setFormData({
@@ -633,7 +707,7 @@ export const AdminAgents = () => {
                     onChange={(e) => updateAgentStatus(viewingAgent.id, e.target.value)}
                   >
                     <option value="">Select Status</option>
-                    <option value="active">Active</option>
+                    <option value="active">Approve (Active)</option>
                     <option value="suspended">Suspended</option>
                   </select>
                 </div>
