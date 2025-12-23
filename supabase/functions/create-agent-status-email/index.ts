@@ -97,9 +97,13 @@ serve(async (req) => {
     if (!emailRes.ok) {
       throw new Error("Failed to send email");
     }
+
     return new Response(
       JSON.stringify({ success: true }),
-      { status: 200 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
     );
 
   } catch (err: any) {
@@ -108,8 +112,10 @@ serve(async (req) => {
         success: false,
         message: err.message,
       }),
-      { status: 500 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
     );
   }
 });
-
