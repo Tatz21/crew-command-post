@@ -4,4 +4,4 @@ project_id = "votwokvmqroxidvokexh"
 verify_jwt = false
 
 [functions.approve-agent]
-verify_jwt = false
+verify_jwt = true
