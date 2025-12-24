@@ -17,14 +17,16 @@ serve(async (req) => {
   try {
     /* ================= AUTH CHECK ================= */
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Unauthorized" }),
-        { status: 401, headers: corsHeaders }
-      );
+    console.log("🔐 Auth Header:", authHeader);
+    
+    if(!authHeader){
+      throw new Error("No Auth Header");
     }
 
-    const { agentId, email, name } = await req.json();
+    const body = await req.json();
+    console.log("Body",body);
+
+    const { agentId, email, name } = body;
     if (!agentId || !email || !name) {
       throw new Error("Missing required fields");
     }
@@ -42,20 +44,19 @@ serve(async (req) => {
     );
 
     /* ================= GENERATE CREDENTIALS ================= */
-    const agentCode = "AGT-" + Math.floor(100000 + Math.random() * 900000);
-    const tempPassword =
-      Math.random().toString(36).slice(-8) + "A1!";
+    const agentCode = "AGT" + Math.floor(100000 + Math.random() * 900000);
+    const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
 
     /* ================= CREATE AUTH USER ================= */
-    const { error: authError } =
+    const { error: createError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
         password: tempPassword,
         email_confirm: true,
       });
 
-    if (authError) {
-      throw new Error(authError.message);
+    if ( createError && !createError.message.toLowerCase().includes("already been registered")) {
+      throw createError;
     }
 
     /* ================= UPDATE AGENT ================= */
@@ -64,6 +65,7 @@ serve(async (req) => {
       .update({
         status: "active",
         agent_code: agentCode,
+        password: tempPassword,
       })
       .eq("id", agentId);
 
@@ -71,15 +73,17 @@ serve(async (req) => {
       throw new Error(updateError.message);
     }
 
+    console.log("Agent Approved")
+
     /* ================= SEND EMAIL (MSG91) ================= */
     const emailRes = await fetch("https://control.msg91.com/api/v5/email/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          authkey: Deno.env.get("MSG91_API_KEY")!,
+          authkey: Deno.env.get("MSG91_AUTH_KEY")!,
         },
         body: JSON.stringify({
-          to: [{ email, name }],
+          to: [{ email:email, contact_person:name }],
           from: {
             email: "no-reply@phoenixtravelopedia.com",
             name: "Phoenix Travelopedia",
@@ -106,6 +110,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         agentCode,
+        password: tempPassword,
       }),
       {
         status: 200,
@@ -113,6 +118,7 @@ serve(async (req) => {
       }
     );
   } catch (err) {
+    console.log("Function Failed:", err.message);
     return new Response(
       JSON.stringify({
         success: false,
