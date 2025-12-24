@@ -8,10 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Plus, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 type Agent = {
   id: string;
-  agent_code: string | null;
+  agent_code: string;
   company_name: string;
   contact_person: string;
   email: string;
@@ -23,16 +24,14 @@ type Agent = {
   pincode: string | null;
   trade_licence_file: string | null;
   trade_licence: string | null;
-  pan: string | null;
-  pan_file: string | null;
-  aadhaar_file: string | null;
-  aadhaar: number | null;
+  pan: string;
+  pan_file: any;
+  aadhaar_file: any;
+  aadhaar: string;
   password: string | null;
-  status: "pending" | "active" | "suspended" | null;
-  commission_rate: number | null;
+  status: string;
+  commission_rate: number;
   created_at: string;
-  updated_at: string;
-  user_id: string | null;
 };
 
 export const AdminAgents = () => {
@@ -56,9 +55,49 @@ export const AdminAgents = () => {
     trade_licence_file: '',
     pan: '',
     pan_file: '',
-    aadhaar: '' as string | number,
+    aadhaar: '',
     aadhaar_file: ''
   });
+  
+  const INDIAN_STATES = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+    "Delhi",
+    "Jammu & Kashmir",
+    "Ladakh",
+    "Puducherry",
+    "Chandigarh",
+    "Dadra & Nagar Haveli and Daman & Diu",
+    "Lakshadweep",
+    "Andaman & Nicobar Islands",
+  ];
+
   const { toast } = useToast();
   const [showCredentials, setShowCredentials] = useState<{email: string, password: string} | null>(null);
 
@@ -81,10 +120,10 @@ export const AdminAgents = () => {
 
   const handleAadhaarBlur = () => {
     if (!formData.aadhaar) return;
-    if (!validateAadhaar(String(formData.aadhaar))) {
+    if (!validateAadhaar(formData.aadhaar)) {
       toast({ title: "Invalid Aadhaar", description: "Aadhaar must be exactly 12 digits", variant: "destructive" });
     }
-  };
+  };  
   
   const uploadDocument = async (file: File, fieldName: string) => {
     const form = new FormData();
@@ -170,19 +209,14 @@ export const AdminAgents = () => {
           return;
         }
 
-        if (!validateAadhaar(String(formData.aadhaar))) {
+        if (!validateAadhaar(formData.aadhaar)) {
           toast({ title: "Invalid Aadhaar", description: "Aadhaar must be exactly 12 digits", variant: "destructive" });
           return;
         }
 
-        const updateData = {
-          ...formData,
-          aadhaar: formData.aadhaar ? Number(formData.aadhaar) : null
-        };
-
         const { error } = await supabase
           .from('agents')
-          .update(updateData)
+          .update(formData)
           .eq('id', editingAgent.id);
 
         if (error) throw error;
@@ -193,7 +227,7 @@ export const AdminAgents = () => {
         });
       } else {
         // Generate temporary password
-        const tempPassword = 'Agent' + Math.random().toString(36).slice(-6) + '2024!';
+        //const tempPassword = 'Agent' + Math.random().toString(36).slice(-6) + '2024!';
         
         try {
           // Call edge function to create user and agent
@@ -207,32 +241,36 @@ export const AdminAgents = () => {
           if (error) throw error;
 
           // Store credentials to display
-          setShowCredentials({
+          /* setShowCredentials({
             email: formData.email,
             password: data?.tempPassword || tempPassword
-          });
+          }); */
 
           toast({
             title: "Agent created successfully",
             description: "Login credentials generated. Please save them securely.",
           });
         } catch (edgeFunctionError) {
-          // Fallback: Create agent without user account
+          console.error('Edge function error:', edgeFunctionError);
+          toast({
+            title: "Agent creation failed", 
+            description: "Could not create agent user account. Creating agent without login.",
+            variant: "destructive",
+          });
+          
+          /* // Fallback: Create agent without user account
           const { data: codeData, error: codeError } = await supabase
             .rpc('generate_agent_code');
 
           if (codeError) throw codeError;
 
-          const insertData = {
-            ...formData,
-            aadhaar: formData.aadhaar ? Number(formData.aadhaar) : null,
-            agent_code: codeData,
-            user_id: null,
-          };
-
           const { error } = await supabase
             .from('agents')
-            .insert(insertData);
+            .insert({
+              ...formData,
+              agent_code: codeData,
+              user_id: null,
+            });
 
           if (error) throw error;
 
@@ -245,7 +283,7 @@ export const AdminAgents = () => {
           toast({
             title: "Agent created successfully",
             description: "Agent created. Login will need to be set up manually.",
-          });
+          }); */
         }
       }
 
@@ -286,7 +324,7 @@ export const AdminAgents = () => {
       trade_licence_file: agent.trade_licence_file || '',
       pan: agent.pan || '',
       pan_file: agent.pan_file || '',
-      aadhaar: agent.aadhaar ?? '',
+      aadhaar: agent.aadhaar || '',
       aadhaar_file: agent.aadhaar_file || ''
     });
     setIsDialogOpen(true);
@@ -317,88 +355,41 @@ export const AdminAgents = () => {
     }
   };
 
-/*   const updateAgentStatus = async (id: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from("agents")
-        .update({ status: newStatus })
-        .eq("id", id);
+  const approveAgent = async (agentId: string, email: string, name: string) => {
+    // Ensure admin logged in
+    const { data: { session } } = await supabase.auth.getSession();
 
-      if (error) throw error;
-
+    if (!session) {
       toast({
-        title: "Status Updated",
-        description: `Agent status changed to ${newStatus}`,
-      });
-
-      fetchAgents(); // refresh table
-      setViewingAgent(null); // close details dialog
-    } catch (error) {
-      toast({
-        title: "Error updating status",
-        description: "Could not update agent status.",
+        title: "Unauthorized",
+        description: "Admin must be logged in",
         variant: "destructive",
       });
+      return;
     }
-  }; */
 
-  const updateAgentStatus = async (id: string, newStatus: "pending" | "active" | "suspended") => {
-    try {
-      setViewingAgent(prev =>
-        prev ? { ...prev, status: newStatus } : prev
-      );
-      // 1 Update DB FIRST
-      const { error: updateError } = await supabase
-        .from("agents")
-        .update({ status: newStatus })
-        .eq("id", id);
-
-      if (updateError) throw updateError;
-
-      // 2 If activating, call edge function to send email
-      if (newStatus === "active") {
-        const { data: sessionData } = await supabase.auth.getSession();
-
-        if (!sessionData.session) {
-          throw new Error("Admin not authenticated");
-        }
-        
-        const { data, error } = await supabase.functions.invoke("create-agent-status-email", {
-          body: { agent_id: id },
-          headers: {
-            Authorization: `Bearer ${sessionData.session?.access_token}`,
-          },
-        });
-
-        if (error || data?.success === false) {
-          // rollback if email/auth failed
-          await supabase
-            .from("agents")
-            .update({ status: "pending" })
-            .eq("id", id);
-
-          throw new Error(data?.message || "Approval email failed");
-        }
-        toast({
-          title: "Agent Approved",
-          description: "Login credentials sent to agent email",
-        });
-      } else {
-        toast({
-          title: "Status Updated",
-          description: `Agent status changed to ${newStatus}`,
-        });
+    const { error } = await supabase.functions.invoke("approve-agent", {
+        body: { agentId, email, name },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`, // ✅ REQUIRED
+        },
       }
+    );
 
-      fetchAgents(); // refresh table
-      setViewingAgent(null); // close details dialog
-    } catch (error) {
+    if (error) {
       toast({
-        title: "Error updating status",
-        description: error.message || "Could not update agent status.",
-        variant: "destructive",
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
       });
+      return;
     }
+
+    toast({
+      title: "Approved",
+      description: "Agent approved & email sent"
+    });
+    fetchAgents();  
   };
 
 
@@ -450,7 +441,7 @@ export const AdminAgents = () => {
                 Add Agent
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingAgent ? 'Edit Agent' : 'Create New Agent'}
@@ -462,39 +453,47 @@ export const AdminAgents = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="company_name">Company Name</Label>
+                    <Label htmlFor="company_name">Company Name *</Label>
                     <Input
                       id="company_name"
                       value={formData.company_name}
                       onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                       required
+                      placeholder="Enter Your Company Name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="contact_person">Contact Person</Label>
+                    <Label htmlFor="contact_person">Contact Person *</Label>
                     <Input
                       id="contact_person"
                       value={formData.contact_person}
                       onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                      placeholder="Enter Your Full Name"
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="phone">Phone *</Label>
+                    <Input
+                      type='tel'
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="Enter Your Mobile Number"
+                      maxLength={10}
+                      onKeyPress={(event) => { if (!/[0-9]/.test(event.key)) { event.preventDefault(); } }}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="Enter Your Email Address"
                       required
                     />
                   </div>
@@ -504,80 +503,145 @@ export const AdminAgents = () => {
                       id="trade_licence"
                       value={formData.trade_licence}
                       onChange={(e) => setFormData({ ...formData, trade_licence: e.target.value })}
-                      required
+                      placeholder="Enter Your Trade Licence Number"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="pan">PAN</Label>
+                    <Label htmlFor="trade_licence_file">Trade Licence File </Label>
+                    <Input 
+                      type="file"
+                      id="trade_licence_file"
+                      name="trade_licence_file"
+                      onChange={handleFileChange}
+                      placeholder="Upload Your Trade Licence File"
+                      accept="image/*"
+                    />
+                    <span className="text-xs text-bold" style={{color:'#bf1212'}}>
+                      Please upload a clear image of your Trade Licence. File size must be less than 2 MB.
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pan">PAN *</Label>
                     <Input
                       id="pan"
                       value={formData.pan}
                       onChange={(e) => setFormData({ ...formData, pan: e.target.value })}
                       onBlur={handlePANBlur}
+                      placeholder="Enter Your PAN Number e.g. ABCDE1234F"
                       required
-                    />
+                      style={{ textTransform: "uppercase" }}
+                    />              
+                    <span className="text-xs text-bold" style={{color:'#bf1212'}}>
+                      PAN must be in format ABCDE1234F.
+                    </span>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="aadhaar">Aadhaar Number</Label>
+                    <Label htmlFor="pan_file">PAN File *</Label>
                     <Input
+                      id="pan_file"
+                      name="pan_file"
+                      type="file"
+                      onChange={handleFileChange}
+                      placeholder="Upload Your PAN File"
+                      required
+                      accept="image/*"
+                    />
+                    <span className="text-xs text-bold" style={{color:'#bf1212'}}>
+                      Please upload a clear image of your PAN card. File size must be less than 2 MB.
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="aadhaar">Aadhaar Number *</Label>
+                    <Input
+                      type='tel'
                       id="aadhaar"
                       value={formData.aadhaar}
                       onChange={(e) => setFormData({ ...formData, aadhaar: e.target.value })}
                       onBlur={handleAadhaarBlur}
+                      placeholder="Enter Your Aadhaar Number"
+                      onKeyPress={(event) => { if (!/[0-9]/.test(event.key)) { event.preventDefault(); } }}
+                      maxLength={12}
                       required
                     />
+                    <span className="text-xs text-bold" style={{color:'#bf1212'}}>
+                      Only 12 digits are allowed.
+                    </span>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="commission_rate">Commission Rate (%)</Label>
+                    <Label htmlFor="aadhaar_file">Aadhaar File *</Label>
                     <Input
-                      id="commission_rate"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      value={formData.commission_rate}
-                      onChange={(e) => setFormData({ ...formData, commission_rate: parseFloat(e.target.value) })}
+                      type="file"
+                      id="aadhaar_file"
+                      name="aadhaar_file"
+                      onChange={handleFileChange}
+                      placeholder="Upload Your Aadhaar File"
                       required
+                      accept="image/*"
                     />
+                    <span className="text-xs text-bold" style={{color:'#bf1212'}}>
+                      Please upload a clear image of your Aadhaar card. File size must be less than 2 MB.
+                    </span>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="address">Address *</Label>
                     <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder='Enter Your Address'
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">City *</Label>
                     <Input
                       id="city"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder="Enter Your City"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
+                    <Label htmlFor="state">State *</Label>
+                    <Select
                       value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    />
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, state: value })
+                      }
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your state" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {INDIAN_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country">Country</Label>
                     <Input
+                      name="country"
                       id="country"
-                      value={formData.country}
+                      value="India"
                       onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="pincode">Pincode</Label>
+                    <Label htmlFor="pincode">Pincode *</Label>
                     <Input
                       id="pincode"
                       value={formData.pincode}
                       onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                      placeholder="Enter Your Area Pincode"
+                      required
+                      onKeyPress={(event) => { if (!/[0-9]/.test(event.key)) { event.preventDefault(); } }}
+                      maxLength={6}
                     />
                   </div>
                 </div>
@@ -730,19 +794,12 @@ export const AdminAgents = () => {
                 </div>
                 <div>
                   <Label className="font-semibold">Status</Label>
-                  <select
-                    className="w-full border rounded p-2"
-                    value={viewingAgent.status ?? ''}
-                    disabled={viewingAgent.status === "active"}
-                    onChange={(e) => {
-                      const value = e.target.value as "active" | "pending" | "suspended";
-                      if (value) updateAgentStatus(viewingAgent.id, value);
-                    }}
+                  <Button
+                    size="sm"
+                    onClick={() => approveAgent(viewingAgent.id, viewingAgent.email, viewingAgent.contact_person)}
                   >
-                    <option value="">Select Status</option>
-                    <option value="active">Approve (Active)</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
+                    Approve
+                  </Button>
                 </div>
 
                 <Button onClick={() => setViewingAgent(null)} className="w-full">
