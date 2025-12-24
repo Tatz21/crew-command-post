@@ -60,7 +60,52 @@ Deno.serve(async (req) => {
       console.error('Agent creation error:', agentError)
       throw agentError
     }
+    // Msg91 Email Service
+    const MSG91_AUTH_KEY = Deno.env.get('MSG91_AUTH_KEY');
 
+    if (!MSG91_AUTH_KEY) {
+      console.error('MSG91_AUTH_KEY not configured');
+      return new Response(
+        JSON.stringify({ success: false, message: 'Email service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Send email with credentials
+    const emailRes = await fetch("https://control.msg91.com/api/v5/email/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        authkey: MSG91_AUTH_KEY,
+      },
+      body: JSON.stringify({
+        recipients: [
+          {
+            to: [
+              {
+                name: agentData.contact_person,
+                email: email
+              },
+            ],
+            variables: {
+                contact_person: agentData.contact_person,
+                agent_code: codeData,
+                password: tempPassword,
+              },
+          },
+        ],
+        from: {
+          email: "no-reply@phoenixtravelopedia.com"
+        },
+        domain: "phoenixtravelopedia.com",
+        template_id: "11122025_3"
+      }),
+    });
+
+    if (!emailRes.ok) {
+      throw new Error("Failed to send email");
+    } 
+    // MSG91 Email Service End
     console.log('Agent created successfully:', agentRecord)
 
     return new Response(
