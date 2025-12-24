@@ -368,12 +368,10 @@ export const AdminAgents = () => {
       return;
     }
 
-    const payload = { agentId, email, name };
-
     const { error } = await supabase.functions.invoke("approve-agent", {
-        body: JSON.stringify(payload),
+        body: { agentId, email, name },
         headers: {
-          Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json", // ✅ REQUIRED
+          Authorization: `Bearer ${session.access_token}`, // ✅ REQUIRED
         },
       }
     );
