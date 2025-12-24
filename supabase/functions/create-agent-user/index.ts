@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       throw agentError
     }
     // Msg91 Email Service
-    const MSG91_AUTH_KEY = Deno.env.get('MSG91_AUTH_KEY');
+    /* const MSG91_AUTH_KEY = Deno.env.get('MSG91_AUTH_KEY');
 
     if (!MSG91_AUTH_KEY) {
       console.error('MSG91_AUTH_KEY not configured');
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     if (!emailRes.ok) {
       throw new Error("Failed to send email");
     } 
-    // MSG91 Email Service End
+    // MSG91 Email Service End */
     console.log('Agent created successfully:', agentRecord)
 
     return new Response(
