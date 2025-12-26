@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, Trash2, Plus, Eye } from 'lucide-react';
+import { Pencil, Trash2, Plus, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 type Agent = {
@@ -355,7 +355,8 @@ export const AdminAgents = () => {
     }
   };
 
-  const approveAgent = async (agentId: string, email: string, name: string) => {
+  //const approveAgent = async (agentId: string, email: string, name: string) => {
+  const updateAgentStatus = async (agentId: string, status: "active" | "suspended", email: string, name: string) => {
     // Ensure admin logged in
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -369,29 +370,25 @@ export const AdminAgents = () => {
     }
 
     const { error } = await supabase.functions.invoke("approve-agent", {
-        body: { agentId, email, name },
+        body: { agentId, status, email, name },
         headers: {
-          Authorization: `Bearer ${session.access_token}`, // ✅ REQUIRED
+          Authorization: `Bearer ${session.access_token}`, // REQUIRED
         },
       }
     );
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
     toast({
       title: "Approved",
-      description: "Agent approved & email sent"
+      description: `Agent ${status === "active" ? "Activated" : "Suspended"} successfully & email sent.`,
     });
     fetchAgents();  
+    setViewingAgent(null);
   };
-
 
   const resetForm = () => {
     setFormData({
@@ -792,16 +789,88 @@ export const AdminAgents = () => {
                     <p>{new Date(viewingAgent.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <div>
-                  <Label className="font-semibold">Status</Label>
-                  <Button
-                    size="sm"
-                    onClick={() => approveAgent(viewingAgent.id, viewingAgent.email, viewingAgent.contact_person)}
-                  >
-                    Approve
-                  </Button>
-                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Update Status</Label>
 
+                  {/* PENDING */}
+                  {viewingAgent.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 text-white"
+                        onClick={() =>
+                          updateAgentStatus(
+                            viewingAgent.id,
+                            "active",
+                            viewingAgent.email,
+                            viewingAgent.contact_person
+                          )
+                        }
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Active
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          updateAgentStatus(
+                            viewingAgent.id,
+                            "suspended",
+                            viewingAgent.email,
+                            viewingAgent.contact_person
+                          )
+                        }
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Suspend
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* ACTIVE */}
+                  {viewingAgent.status === "active" && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          updateAgentStatus(
+                            viewingAgent.id,
+                            "suspended",
+                            viewingAgent.email,
+                            viewingAgent.contact_person
+                          )
+                        }
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Suspend
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* SUSPENDED */}
+                  {viewingAgent.status === "suspended" && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 text-white"
+                        onClick={() =>
+                          updateAgentStatus(
+                            viewingAgent.id,
+                            "active",
+                            viewingAgent.email,
+                            viewingAgent.contact_person
+                          )
+                        }
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Activate
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <Button onClick={() => setViewingAgent(null)} className="w-full">
                   Close
                 </Button>
