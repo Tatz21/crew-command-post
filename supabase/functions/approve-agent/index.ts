@@ -54,7 +54,7 @@ serve(async (req) => {
     if (status === "active" && agent.status === "pending") {
         /* ================= GENERATE CREDENTIALS ================= */
         const agentCode = "AGT" + Math.floor(100000 + Math.random() * 900000);
-        const tempPassword = Math.random().toString(36).slice(2, 10);
+        const tempPassword = "Phe@12345";
 
         /* ================= CREATE AUTH USER ================= */
 
@@ -97,7 +97,7 @@ serve(async (req) => {
             to: [{ email:email, contact_person:name }],
             from: {
                 email: "no-reply@phoenixtravelopedia.com",
-                name: "Phoenix Travelopedia",
+                name: "Noreply Phoenix Travelopedia",
             },
             domain: "phoenixtravelopedia.com",
             template_id: "11122025_3",
@@ -139,12 +139,14 @@ serve(async (req) => {
             to: [{ email:email, contact_person:name }],
             from: {
                 email: "no-reply@phoenixtravelopedia.com",
-                name: "Phoenix Travelopedia",
+                name: "Noreply Phoenix Travelopedia",
             },
             domain: "phoenixtravelopedia.com",
             template_id: "26122025",
             variables: {
-                contact_person: name,
+                contact_person: name,                
+                agent_code: agent.agent_code,
+                password: agent.password,
             },
             }),
         });
@@ -166,7 +168,7 @@ serve(async (req) => {
         .eq("id", agentId);
 
         if (updateError) {
-        throw new Error(updateError.message);
+            throw new Error(updateError.message);
         }
 
         console.log("Agent Suspended")
@@ -179,16 +181,16 @@ serve(async (req) => {
             authkey: Deno.env.get("MSG91_AUTH_KEY")!,
             },
             body: JSON.stringify({
-            to: [{ email:email, contact_person:name }],
-            from: {
-                email: "no-reply@phoenixtravelopedia.com",
-                name: "Phoenix Travelopedia",
-            },
-            domain: "phoenixtravelopedia.com",
-            template_id: "26122025",
-            variables: {
-                contact_person: name,
-            },
+                to: [{ email:email, contact_person:name }],
+                from: {
+                    email: "no-reply@phoenixtravelopedia.com",
+                    name: "Noreply Phoenix Travelopedia",
+                },
+                domain: "phoenixtravelopedia.com",
+                template_id: "26122025",
+                variables: {
+                    contact_person: name,
+                },
             }),
         });
 
